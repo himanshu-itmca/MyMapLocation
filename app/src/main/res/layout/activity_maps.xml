@@ -22,7 +22,7 @@
             android:layout_marginTop="5dp"
             android:orientation="vertical">
 
-            <TextView android:gravity="center_vertical"
+<!--            <TextView android:gravity="center_vertical"
                 android:id="@+id/Locality"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -32,7 +32,7 @@
                 android:padding="10dp"
                 android:singleLine="true"
                 android:text="Click to change location"
-                android:textSize="@dimen/font_22" />
+                android:textSize="@dimen/font_22" />-->
 
             <EditText
                 android:id="@+id/Address"
@@ -42,7 +42,14 @@
                 android:ellipsize="end"
                 android:enabled="false"
                 android:hint="Address"
-                android:singleLine="true" />
+                android:singleLine="true"
+                android:visibility="gone"
+                />
+
+            <TextView
+                android:id="@+id/full_address"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
         </LinearLayout>
     </LinearLayout>
     <FrameLayout
@@ -85,9 +92,6 @@
                 android:src="@drawable/add_marker" />
         </LinearLayout>
 
-
-
     </FrameLayout>
-
 
 </RelativeLayout>

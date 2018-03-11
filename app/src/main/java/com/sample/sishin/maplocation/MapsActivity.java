@@ -6,7 +6,10 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
+import android.os.Build;
 import android.os.Handler;
 import android.os.ResultReceiver;
 import android.provider.Settings;
@@ -39,6 +42,9 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 
+import java.util.List;
+import java.util.Locale;
+
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
 
     private GoogleMap mMap;
@@ -62,7 +68,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     protected String mCityOutput;
     protected String mStateOutput;
     EditText mLocationAddress;
-    TextView mLocationText;
+    TextView mLocationText,full_address;
     private static final int REQUEST_CODE_AUTOCOMPLETE = 1;
     Toolbar mToolbar;
 
@@ -72,13 +78,22 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         mContext = this;
+
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+        {
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION},1);
+        }
+
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
 
         mLocationMarkerText = (TextView) findViewById(R.id.locationMarkertext);
         mLocationAddress = (EditText) findViewById(R.id.Address);
-        mLocationText = (TextView) findViewById(R.id.Locality);
+        full_address = (TextView) findViewById(R.id.full_address);
+//        mLocationText = (TextView) findViewById(R.id.Locality);
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);
         getSupportActionBar().setDisplayShowHomeEnabled(true);
@@ -86,7 +101,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         getSupportActionBar().setTitle(getResources().getString(R.string.app_name));
 
 
-        mLocationText.setOnClickListener(new View.OnClickListener() {
+        /*mLocationText.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
@@ -95,7 +110,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
 
 
-        });
+        });*/
         mapFragment.getMapAsync(this);
         mResultReceiver = new AddressResultReceiver(new Handler());
 
@@ -151,8 +166,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 Log.d("Camera postion change" + "", cameraPosition + "");
                 mCenterLatLong = cameraPosition.target;
 
-
                 mMap.clear();
+
+                Geocoder geocoder = new Geocoder(MapsActivity.this, Locale.getDefault());
 
                 try {
 
@@ -161,7 +177,20 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     mLocation.setLongitude(mCenterLatLong.longitude);
 
                     startIntentService(mLocation);
-                    mLocationMarkerText.setText("Lat : " + mCenterLatLong.latitude + "," + "Long : " + mCenterLatLong.longitude);
+//                    mLocationMarkerText.setText("Lat : " + mCenterLatLong.latitude + "," + "Long : " + mCenterLatLong.longitude);
+
+                    List<Address> addressList = geocoder.getFromLocation(mCenterLatLong.latitude,mCenterLatLong.longitude,1);
+                    if(addressList.size() > 0) {
+                        Address address = addressList.get(0);
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i <= address.getMaxAddressLineIndex(); i++) {
+                            String add = address.getAddressLine(i);
+                            sb.append(add).append("\n");
+                        }
+
+                        mLocationMarkerText.setText("" + sb);
+                        full_address.setText(""+sb);
+                    }
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -330,14 +359,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             mMap.animateCamera(CameraUpdateFactory
                     .newCameraPosition(cameraPosition));
 
-            mLocationMarkerText.setText("Lat : " + location.getLatitude() + "," + "Long : " + location.getLongitude());
+//            mLocationMarkerText.setText("Lat : " + location.getLatitude() + "," + "Long : " + location.getLongitude());
             startIntentService(location);
+
+            Log.i(TAG, "changeMap: calling");
 
 
         } else {
-            Toast.makeText(getApplicationContext(),
-                    "Sorry! unable to create maps", Toast.LENGTH_SHORT)
-                    .show();
+            Toast.makeText(getApplicationContext(), "Sorry! unable to create maps", Toast.LENGTH_SHORT).show();
         }
 
     }
@@ -383,7 +412,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
      * Updates the address in the UI.
      */
     protected void displayAddressOutput() {
-        //  mLocationAddressTextView.setText(mAddressOutput);
+        /*//  mLocationAddressTextView.setText(mAddressOutput);
         try {
             if (mAreaOutput != null)
                // mLocationText.setText(mAreaOutput+ "");
@@ -392,7 +421,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             //mLocationText.setText(mAreaOutput);
         } catch (Exception e) {
             e.printStackTrace();
-        }
+        }*/
     }
 
     /**
@@ -420,8 +449,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         try {
             // The autocomplete activity requires Google Play Services to be available. The intent
             // builder checks this and throws an exception if it is not the case.
-            Intent intent = new PlaceAutocomplete.IntentBuilder(PlaceAutocomplete.MODE_FULLSCREEN)
-                    .build(this);
+            Intent intent = new PlaceAutocomplete.IntentBuilder(PlaceAutocomplete.MODE_FULLSCREEN).build(this);
             startActivityForResult(intent, REQUEST_CODE_AUTOCOMPLETE);
         } catch (GooglePlayServicesRepairableException e) {
             // Indicates that Google Play Services is either not installed or not up to date. Prompt
@@ -431,8 +459,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         } catch (GooglePlayServicesNotAvailableException e) {
             // Indicates that Google Play Services is not available and the problem is not easily
             // resolvable.
-            String message = "Google Play Services is not available: " +
-                    GoogleApiAvailability.getInstance().getErrorString(e.errorCode);
+            String message = "Google Play Services is not available: " + GoogleApiAvailability.getInstance().getErrorString(e.errorCode);
 
             Toast.makeText(mContext, message, Toast.LENGTH_SHORT).show();
         }
